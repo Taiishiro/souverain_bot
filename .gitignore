@@ -1,0 +1,83 @@
+# ── Secrets ────────────────────────────────────────────────────────────────
+# Ne JAMAIS committer : contient DISCORD_TOKEN et l'URL PostgreSQL.
+.env
+.env.local
+.env.*.local
+
+# ── Dépendances & build ────────────────────────────────────────────────────
+node_modules/
+dist/
+.prisma/
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+*.log
+nohup.out
+build_errors.txt
+
+# ── Résidus de patch ───────────────────────────────────────────────────────
+# `patch` laisse ces fichiers quand un hunk ne s'applique pas proprement. Il en
+# traîne une douzaine dans src/ ; ils n'ont rien à faire dans le dépôt.
+*.orig
+*.rej
+*.bak
+
+# ── Scripts de développement jetables ──────────────────────────────────────
+# ~130 scripts one-shot écrits pendant le développement (correctifs ponctuels,
+# migrations manuelles, essais). Aucun n'est référencé par package.json ni
+# importé par src/ : l'application, c'est src/ + prisma/.
+# Ils restent sur le disque — ils ne sont simplement pas publiés.
+fix_*.js
+fix_*.patch
+fix.patch
+patch_*.js
+patch_*.ts
+patch_*.patch
+rewrite_*.js
+rewrite_*.patch
+clean_*.js
+clean_*.ts
+update_*.patch
+replace_*.js
+run-*-fix.js
+lint_*.js
+check.ts
+check_*.ts
+combat_head.ts
+execute_combat_backup.ts
+test.html
+test.png
+test-*.js
+test_*.js
+test_*.ts
+test_*.patch
+# Requêtes de debug jetées après usage, et migrations one-shot déjà appliquées.
+# (Le seed officiel, c'est `npm run db:seed` → prisma/seed.ts.)
+list_items.ts
+query_items.ts
+seed_shop.ts
+update_prices.ts
+update_shop.js
+update_attaque_bot.sh
+
+# ── Rapports de statut générés ─────────────────────────────────────────────
+# Instantanés d'avancement, redondants et périmés. Le README fait foi.
+FINAL_REPORT.md
+IMPLEMENTATION_SUMMARY.md
+STATUS_CORRECTIONS.md
+STATUS_FINAL.md
+SETUP_FINAL.md
+START_HERE.md
+VERIFICATION_PLAN.md
+VERIFICATION_SUMMARY.md
+TESTING_CHECKLIST.md
+
+# ── Docs périmées ──────────────────────────────────────────────────────────
+# Instantanés d'un état passé du projet, redondants avec le README ou docs/.
+# Conservées sur le disque, pas publiées.
+PROJECT_STRUCTURE.md
+IMPLEMENTATION_ROADMAP.md
+QUICKSTART.md
+
+# ── OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

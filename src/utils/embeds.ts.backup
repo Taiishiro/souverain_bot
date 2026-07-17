@@ -1,0 +1,207 @@
+import { EmbedBuilder, User } from 'discord.js';
+
+// 🎨 PALETTE NÉO-MÉDIÉVAL CYBERNÉTIQUE
+const ROYAL_PURPLE = '#2D1B69';      // Violet Royal Profond
+const CYBER_GOLD = '#FFD700';        // Or Cybernétique
+const NEON_GREEN = '#00FF88';        // Vert Néon Magique
+const SPACE_DARK = '#1A1A2E';        // Fond Spatial
+const PLASMA_RED = '#FF6B6B';        // Rouge Plasma
+
+/**
+ * 🔮 Crée un embed de succès (cyber-gold)
+ */
+export function successEmbed(title: string, description: string, author?: User) {
+  const embed = new EmbedBuilder()
+    .setColor(CYBER_GOLD)
+    .setTitle(`✨ ${title}`)
+    .setDescription(description)
+    .setTimestamp()
+    .setFooter({ text: '🔮 Souverain Bot - Âge des Rois Numériques', iconURL: 'https://i.imgur.com/placeholder.png' });
+
+  if (author) {
+    embed.setFooter({ text: `${author.username} • 🔮 Souverain Bot`, iconURL: author.displayAvatarURL() });
+  }
+
+  return embed;
+}
+
+/**
+ * ⚠️ Crée un embed d'erreur (plasma red)
+ */
+export function errorEmbed(title: string, description: string, author?: User) {
+  const embed = new EmbedBuilder()
+    .setColor(PLASMA_RED)
+    .setTitle(`⚠️ ${title}`)
+    .setDescription(description)
+    .setTimestamp()
+    .setFooter({ text: '🔮 Souverain Bot - Erreur Système', iconURL: 'https://i.imgur.com/placeholder.png' });
+
+  if (author) {
+    embed.setFooter({ text: `${author.username} • ⚠️ Erreur`, iconURL: author.displayAvatarURL() });
+  }
+
+  return embed;
+}
+
+/**
+ * ℹ️ Crée un embed d'information (royal purple)
+ */
+export function infoEmbed(title: string, description: string, author?: User) {
+  const embed = new EmbedBuilder()
+    .setColor(ROYAL_PURPLE)
+    .setTitle(`ℹ️ ${title}`)
+    .setDescription(description)
+    .setTimestamp()
+    .setFooter({ text: '🔮 Souverain Bot - Information', iconURL: 'https://i.imgur.com/placeholder.png' });
+
+  if (author) {
+    embed.setFooter({ text: `${author.username} • ℹ️ Info`, iconURL: author.displayAvatarURL() });
+  }
+
+  return embed;
+}
+
+/**
+ * 👑 Crée un embed de richesse (royal avec rangs cyber-médiévaux)
+ */
+export function richesseEmbed(user_name: string, argent: bigint, avatar?: string) {
+  const embed = new EmbedBuilder()
+    .setColor(CYBER_GOLD)
+    .setTitle(`👑 Trésorerie Royale`)
+    .setDescription(`**${user_name}**\n\`\`\`css\n💰 Solde: ${argent.toLocaleString()} pièces d'or\n\`\`\``)
+    .setThumbnail(avatar || 'https://i.imgur.com/placeholder.png')
+    .addFields(
+      { name: '🏦 Banque Quantique', value: 'Sécurisée par IA ancestrale', inline: true },
+      { name: '⚡ État Financier', value: getWealthStatus(argent), inline: true },
+      { name: '🔮 Rang Royal', value: getWealthRank(argent), inline: true }
+    )
+    .setFooter({ text: '🔮 Souverain Bot - Trésorerie Royale', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+
+  return embed;
+}
+
+/**
+ * 🎒 Crée un embed inventaire (cyber-médiéval)
+ */
+export function inventaireEmbed(
+  user_name: string,
+  items: Record<string, number>,
+  avatar?: string
+) {
+  const itemsList = Object.entries(items)
+    .map(([name, qty]) => `• ${name} x${qty}`)
+    .join('\n') || '🎒 Inventaire vide';
+
+  return new EmbedBuilder()
+    .setColor(ROYAL_PURPLE)
+    .setTitle(`🎒 Inventaire Royal`)
+    .setDescription(`**${user_name}**\n\`\`\`\n${itemsList}\n\`\`\``)
+    .setThumbnail(avatar || 'https://i.imgur.com/placeholder.png')
+    .setFooter({ text: '🔮 Souverain Bot - Inventaire Quantique', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+}
+
+/**
+ * 🏰 Crée un embed royaume (futuriste médiéval)
+ */
+export function royaumeEmbed(
+  nom: string,
+  description: string,
+  membres: number,
+  dragons: number,
+  argent: bigint,
+  avatar?: string
+) {
+  return new EmbedBuilder()
+    .setColor(NEON_GREEN)
+    .setTitle(`🏰 Royaume ${nom}`)
+    .setDescription(description)
+    .addFields(
+      { name: '👥 Citoyens', value: `${membres}`, inline: true },
+      { name: '🐉 Dragons', value: `${dragons}`, inline: true },
+      { name: '💰 Trésorerie', value: `${argent.toLocaleString()}🪙`, inline: true }
+    )
+    .setThumbnail(avatar || 'https://i.imgur.com/placeholder.png')
+    .setFooter({ text: '🔮 Souverain Bot - Royaumes Numériques', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+}
+
+/**
+ * 🐉 Crée un embed dragon (cybernétique)
+ */
+export function dragonEmbed(
+  nom: string,
+  niveau: number,
+  faim: number,
+  energie: number,
+  avatar?: string
+) {
+  const status = faim < 20 ? '⚠️ Affamé' : faim < 50 ? '🤤 Faim' : '😊 Repu';
+  const energyStatus = energie < 20 ? '⚠️ Fatigué' : energie < 50 ? '😴 Somnolent' : '⚡ Energique';
+
+  return new EmbedBuilder()
+    .setColor(PLASMA_RED)
+    .setTitle(`🐉 ${nom} - Dragon Cybernétique`)
+    .setDescription(`\`\`\`css\n🔥 Niveau: ${niveau}\n🍖 Faim: ${faim}% [${status}]\n⚡ Énergie: ${energie}% [${energyStatus}]\n\`\`\``)
+    .setThumbnail(avatar || 'https://i.imgur.com/placeholder.png')
+    .setFooter({ text: '🔮 Souverain Bot - Créatures Quantiques', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+}
+
+/**
+ * ⚔️ Détermine le statut financier
+ */
+function getWealthStatus(amount: bigint): string {
+  if (amount >= BigInt(10000)) return '💎 Immensément Riche';
+  if (amount >= BigInt(5000)) return '🏆 Très Riche';
+  if (amount >= BigInt(1000)) return '💰 Riche';
+  if (amount >= BigInt(500)) return '🪙 Aisé';
+  if (amount >= BigInt(100)) return '👤 Modeste';
+  return '🎭 Pauvre';
+}
+
+/**
+ * 🔮 Détermine le rang royal
+ */
+function getWealthRank(amount: bigint): string {
+  if (amount >= BigInt(50000)) return '👑 Empereur Quantique';
+  if (amount >= BigInt(25000)) return '🫅 Grand Seigneur';
+  if (amount >= BigInt(10000)) return '⚔️ Seigneur des Dragons';
+  if (amount >= BigInt(5000)) return '🛡️ Chevalier d\'Élite';
+  if (amount >= BigInt(1000)) return '👤 Garde Royale';
+  if (amount >= BigInt(500)) return '🎭 Citoyen';
+  return '👶 Paysan Numérique';
+/**
+ * 🎒 Crée un embed inventaire (cyber-médiéval)
+ */
+export function inventaireEmbed(
+  user_name: string,
+  items: Record<string, number>,
+  avatar?: string
+) {
+  const itemsList = Object.entries(items)
+    .map(([name, qty]) => `• ${name} x${qty}`)
+    .join('\n') || '🎒 Inventaire vide';
+
+  return new EmbedBuilder()
+    .setColor(ROYAL_PURPLE)
+    .setTitle(`🎒 Inventaire Royal`)
+    .setDescription(`**${user_name}**\n\`\`\`\n${itemsList}\n\`\`\``)
+    .setThumbnail(avatar || 'https://i.imgur.com/placeholder.png')
+    .setFooter({ text: '🔮 Souverain Bot - Inventaire Quantique', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+}
+
+/**
+ * 💸 Crée un embed de paiement (cyber-gold)
+ */
+export function paiementEmbed(from: string, to: string, montant: bigint, taxe: bigint) {
+  return new EmbedBuilder()
+    .setColor(CYBER_GOLD)
+    .setTitle(`💸 Transaction Quantique`)
+    .setDescription(`\`\`\`css\n👤 Émetteur: ${from}\n👤 Destinataire: ${to}\n💰 Montant envoyé: ${montant.toLocaleString()}🪙\n⚡ Taxe royale (5%): -${taxe.toLocaleString()}🪙\n💎 Montant reçu: ${(montant - taxe).toLocaleString()}🪙\n\`\`\``)
+    .setFooter({ text: '🔮 Souverain Bot - Transactions Sécurisées par IA Ancestrale', iconURL: 'https://i.imgur.com/placeholder.png' })
+    .setTimestamp();
+}
+}

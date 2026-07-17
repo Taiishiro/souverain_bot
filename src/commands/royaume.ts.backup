@@ -1,0 +1,151 @@
+import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { prisma } from '../db/prisma';
+import { getOrCreateUser } from '../features/economy/handlers';
+import { getUserDragons } from '../features/dragons/handlers';
+import { createRoyaume, getRoyaumeByOwner } from '../features/royaumes/handlers';
+import { errorEmbed, successEmbed } from '../utils/embeds';
+
+const GOLD = '#FFD700';
+const ROYAUME_PRICE = BigInt(50000); // Prix pour acheter un royaume
+
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName('royaume')
+    .setDescription('👑 Gère votre royaume')
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('acheter')
+        .setDescription('Achète un nouveau royaume (50,000🪙)')
+        .addStringOption((option) =>
+          option
+            .setName('nom')
+            .setDescription('Nom du royaume')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('info')
+        .setDescription('Affiche les infos de votre royaume')
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction, client: any) {
+    await interaction.deferReply();
+
+    try {
+      const userId = interaction.user.id;
+      await getOrCreateUser(userId);
+
+      const user = await prisma.user.findUnique({
+        where: { discordId: userId },
+      });
+
+      if (!user) {
+        return await interaction.editReply({
+          embeds: [errorEmbed('Erreur', 'Utilisateur non trouvé.')],
+        });
+      }
+
+      const subcommand = interaction.options.getSubcommand();
+
+      if (subcommand === 'acheter') {
+        // Vérifier les prérequis
+        const user_dragons = await getUserDragons(user.id);
+        const t2_plus = user_dragons.filter((d) => d.tiers === 'T2' || d.tiers === 'T3');
+
+        if (t2_plus.length < 3) {
+          return await interaction.editReply({
+            embeds: [
+              errorEmbed(
+                'Prérequis manquants',
+                `Vous avez besoin de 3 dragons T2+ pour acheter un royaume. Vous en avez: **${t2_plus.length}**`
+              ),
+            ],
+          });
+        }
+
+        // Vérifier le solde
+        if (user.argent_perso < ROYAUME_PRICE) {
+          return await interaction.editReply({
+            embeds: [
+              errorEmbed(
+                'Fonds insuffisants',
+                `L'achat d'un royaume coûte **${ROYAUUME_PRICE.toLocaleString()}🪙**. Vous avez: **${user.argent_perso.toLocaleString()}🪙**`
+              ),
+            ],
+          });
+        }
+
+        // Vérifier qu'on n'en a pas déjà un
+        const existing = await getRoyaumeByOwner(user.id);
+        if (existing) {
+          return await interaction.editReply({
+            embeds: [errorEmbed('Déjà propriétaire', 'Vous possédez déjà un royaume.')],
+          });
+        }
+
+        const nom = interaction.options.getString('nom', true);
+
+        // Débiter l'argent
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { argent_perso: { decrement: ROYAUME_PRICE } },
+        });
+
+        const result = await createRoyaume(nom, user.id, interaction.guildId!, client);
+
+        if (!result) {
+          // Remettre l'argent en cas d'erreur
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { argent_perso: { increment: ROYAUME_PRICE } },
+          });
+          return await interaction.editReply({
+            embeds: [errorEmbed('Erreur', 'Impossible de créer le royaume.')],
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(GOLD)
+          .setTitle('👑 Royaume acheté!')
+          .setDescription(
+            `✨ Vous avez acheté le royaume **${nom}** pour **${ROYAUUME_PRICE.toLocaleString()}🪙**\n\n` +
+            `🏰 Catégorie Discord: <#${result.categoryId}>\n` +
+            `🎤 Canal vocal: <#${result.voiceChannelId}>\n` +
+            `👑 Rôle: <@&${result.roleId}>`
+          )
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+      } else if (subcommand === 'info') {
+        const royaume = await getRoyaumeByOwner(user.id);
+
+        if (!royaume) {
+          return await interaction.editReply({
+            embeds: [
+              errorEmbed('Pas de royaume', 'Vous ne possédez pas de royaume.'),
+            ],
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(GOLD)
+          .setTitle(`👑 Royaume ${royaume.nom}`)
+          .setDescription(
+            `🏰 **Puissance:** ${royaume.puissance.toLocaleString()}\n` +
+            `👥 **Citoyens:** 1\n` +
+            `🐉 **Dragons:** 0\n` +
+            `💰 **Trésorerie:** 0🪙`
+          )
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+      }
+    } catch (error) {
+      console.error('Erreur /royaume:', error);
+      await interaction.editReply({
+        embeds: [errorEmbed('Erreur', 'Impossible de traiter la commande.')],
+      });
+    }
+  },
+};

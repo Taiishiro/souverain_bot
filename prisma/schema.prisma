@@ -1,0 +1,239 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================
+// UTILISATEURS & FAMILLES
+// =====================
+
+model User {
+  id            String   @id @default(cuid())
+  discordId     String   @unique
+  argent_perso  BigInt   @default(0)
+  argent_record BigInt   @default(0)
+  inventaire    Json     @default("{}")
+  famille_id    String?  @db.Text
+  famille       Famille? @relation("FamilleMembres", fields: [famille_id], references: [id], onDelete: SetNull)
+  dragons       Dragon[] @relation("UserDragons")
+  royaumes_owns Royaume[] @relation("RoyaumeOwner")
+  alliance_id   String?  @db.Text
+  alliance      Alliance? @relation("AllianceUsers", fields: [alliance_id], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([famille_id])
+  @@index([discordId])
+}
+
+model Famille {
+  id                String   @id @default(cuid())
+  nom               String   @unique
+  role_discord_id   String?
+  chef_id           String
+  argent_commun     BigInt   @default(0)
+  argent_record     BigInt   @default(0)
+  inventaire_commun Json     @default("{}")
+  membres           User[]   @relation("FamilleMembres")
+  date_creation     DateTime @default(now())
+  alliance_id       String?  @db.Text
+  alliance          Alliance? @relation("AllianceFamilles", fields: [alliance_id], references: [id], onDelete: SetNull)
+  updatedAt         DateTime @updatedAt
+
+  @@index([chef_id])
+}
+
+// =====================
+// DRAGONS
+// =====================
+
+model Dragon {
+  id              String   @id @default(cuid())
+  owner_id        String
+  owner           User     @relation("UserDragons", fields: [owner_id], references: [id], onDelete: Cascade)
+
+  nom             String?  @db.VarChar(50)
+  tiers           String   @default("T1")
+  niveau          Int      @default(1)
+  experience      BigInt   @default(0)
+  puissance       Int      @default(10)
+  faim            Int      @default(100)
+  energie_combat  Int      @default(100)
+  // États possibles: "Vivant" (combat) | "Squelette" (inerte, gelé) | "Incinéré" (supprimé définitivement)
+  etat            String   @default("Vivant")
+  age_en_jours    Int      @default(0)
+  date_creation   DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  alliance_id     String?  @db.Text
+  alliance        Alliance? @relation("AllianceDragons", fields: [alliance_id], references: [id], onDelete: SetNull)
+
+  @@index([owner_id])
+  @@index([etat])
+}
+
+// =====================
+// ROYAUMES
+// =====================
+
+model Royaume {
+  id                   String   @id @default(cuid())
+  nom                  String   @unique
+  owner_id             String
+  owner                User     @relation("RoyaumeOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  puissance            BigInt   @default(0)
+  pv                   Int      @default(3)
+  max_pv               Int      @default(3)
+  type                 String   @default("Frontalier")
+  // Discord Integration
+  categorie_discord_id String   @default("")
+  role_discord_id      String?  // Rôle "Souverain de [nom]" (nullable, pas unique pour compatibilité)
+  salons_json          Json     @default("{\"palais\": \"\", \"place-publique\": \"\", \"caserne\": \"\", \"cachot\": \"\"}")
+  date_creation        DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([owner_id])
+}
+
+// =====================
+// BOUTIQUE
+// =====================
+
+model ShopItem {
+  id         String   @id @default(cuid())
+  nom        String   @unique
+  type       String
+  prix       BigInt
+  effet_json Json     @default("{}")
+  stock      Int      @default(-1)
+  createdAt  DateTime @default(now())
+
+  @@index([type])
+}
+
+// =====================
+// CONFIGURATION DU JEU
+// =====================
+
+model GameConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("general")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+}
+
+// =====================
+// EMPRISONNEMENT & MANDATS
+// =====================
+
+model Emprisonnement {
+  id              String   @id @default(cuid())
+  prisonnier_id   String
+  royaume_id      String
+  raison          String?
+  vocal_id        String   // ID du salon #cachot où le prisonnier sera déplacé
+  libere_a        DateTime // Libération automatique à cette heure
+  createdAt       DateTime @default(now())
+
+  @@index([prisonnier_id])
+  @@index([royaume_id])
+  @@index([libere_a])
+}
+
+// =====================
+// COOLDOWNS PERSISTANTS (survit redémarrages!)
+// =====================
+
+model CooldownPersistent {
+  id           String   @id @default(cuid())
+  user_id      String
+  action_type  String   // attaque, sabotage, perquisition, emprisonnement
+  available_at DateTime // Quand l'action sera disponible
+  createdAt    DateTime @default(now())
+
+  @@unique([user_id, action_type])
+  @@index([user_id])
+  @@index([action_type])
+  @@index([available_at])
+}
+
+// =====================
+// ALLIANCES
+// =====================
+
+model Alliance {
+  id                String   @id @default(cuid())
+  nom               String   @unique
+  chef_id           String
+  role_discord_id   String?
+  inventaire_commun Json     @default("{}")
+  argent_commun     BigInt   @default(0)
+  
+  membres_users     User[]    @relation("AllianceUsers")
+  membres_familles  Famille[] @relation("AllianceFamilles")
+  dragons           Dragon[]  @relation("AllianceDragons")
+  
+  date_creation     DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([chef_id])
+}
+
+// =====================
+// COOLDOWNS
+// =====================
+
+model Cooldown {
+  id        String   @id @default(cuid())
+  user_id   String
+  action    String
+  expire_at DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([user_id, action])
+  @@index([user_id, action])
+}
+
+// =====================
+// PARIS MUTUELS
+// =====================
+
+model Pari {
+  id            String   @id @default(cuid())
+  createur_id   String
+  type          String
+  mises_json    Json     @default("{}")
+  cote          Float    @default(1.0)
+  resultat      String?
+  date_creation DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createur_id])
+}
+
+// =====================
+// CONFIGURATION GLOBALE
+// =====================
+
+model Config {
+  id                    String   @id @default(cuid())
+  tax_percentage        Int      @default(5)
+  toggle_faim_enabled   Boolean  @default(true)
+  prix_multiplicateur   Float    @default(1.0)
+  cooldown_perquisition Int      @default(24)
+  daily_amount          BigInt   @default(1000)
+  daily_cooldown        Int      @default(24)
+  canal_logs_id         String   @default("")
+  updatedAt             DateTime @updatedAt
+}
